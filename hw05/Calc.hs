@@ -8,6 +8,7 @@ import Parser (parseExp)
 import qualified StackVM as VM
 import           StackVM (Program)
 import Data.Monoid ((<>))
+import qualified Data.Map as M
 
 eval :: ExprT -> Integer
 eval (Lit n) = n
@@ -72,3 +73,50 @@ testSat      = testExp :: Maybe Mod7
 
 compile :: String -> Maybe Program
 compile = parseExp lit add mul
+
+
+class HasVars a where
+  var :: String -> a
+
+data VarExprT = XLit Integer
+              | XAdd VarExprT VarExprT
+              | XMul VarExprT VarExprT
+              | XVar String
+              deriving (Show, Eq)
+
+instance HasVars VarExprT where
+  var = XVar
+
+instance Expr VarExprT where
+  lit = XLit
+  add = XAdd
+  mul = XMul
+
+-- | This looks like the Reader Monad
+-- (->) (M.Map String Integer) (Maybe Integer)
+-- Reader (M.Map String Integer) (Maybe Integer)
+instance HasVars (M.Map String Integer -> Maybe Integer) where
+-- var str = \e -> M.lookup str e
+-- var str e = M.lookup str e
+-- eta reduction yields what we have below:
+  var str = M.lookup str
+
+-- | This is also Reader: (->) r
+instance Expr (M.Map String Integer -> Maybe Integer) where  
+-- ignore the environment and lift the String into a default context
+  lit n   = \_ -> return n
+
+-- Both `a` and `b` are functions provided by `var` from the HasVars
+-- typeclass that must be applied over an environment to obtain the
+-- result
+  add a b = \e -> case (a e, b e) of
+                   (Just a', Just b') -> Just (a' + b')
+                   _                  -> Nothing
+  mul a b = \e -> case (a e, b e) of
+                   (Just a', Just b') -> Just (a' * b')
+                   _                  -> Nothing
+
+withVars :: [(String, Integer)]
+         -> (M.Map String Integer -> Maybe Integer)
+         -> Maybe Integer
+withVars vs exp = exp $ M.fromList vs
