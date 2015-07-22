@@ -85,6 +85,8 @@ data VarExprT = XLit Integer
               deriving (Show, Eq)
 
 instance HasVars VarExprT where
+-- var v = XVar v
+-- eta reduced to below:
   var = XVar
 
 instance Expr VarExprT where
@@ -101,17 +103,22 @@ instance HasVars (M.Map String Integer -> Maybe Integer) where
 -- eta reduction yields what we have below:
   var str = M.lookup str
 
--- | This is also Reader: (->) r
+-- | This is also Reader: (->) r a
 instance Expr (M.Map String Integer -> Maybe Integer) where  
 -- ignore the environment and lift the String into a default context
+-- lit :: Integer -> (r -> a)
   lit n   = \_ -> return n
 
 -- Both `a` and `b` are functions provided by `var` from the HasVars
 -- typeclass that must be applied over an environment to obtain the
 -- result
+-- add :: a          -> a          -> a
+--     :: ((->) r a) -> ((->) r a) -> ((->) r a)
+--     :: (r -> a)   -> (r -> a)   -> (r -> a)
   add a b = \e -> case (a e, b e) of
                    (Just a', Just b') -> Just (a' + b')
                    _                  -> Nothing
+-- mul :: (r -> a) -> (r -> a) -> (r -> a)
   mul a b = \e -> case (a e, b e) of
                    (Just a', Just b') -> Just (a' * b')
                    _                  -> Nothing
