@@ -59,6 +59,10 @@ indexJ n (Append m xs ys)
 
   where leftSize = getSize . size . tag $ xs
 
+-- | Test indexJ
+testIndexJ :: (Sized b, Monoid b) => Int -> JoinList b a -> Bool
+testIndexJ n xs = indexJ n xs == jlToList xs !!? n
+
 -- | Drop the specified number of elements from the front of the
 -- JoinList
 dropJ :: (Sized b, Monoid b) => Int -> JoinList b a -> JoinList b a
@@ -70,4 +74,8 @@ dropJ n (Append m xs ys)
   | otherwise        = dropJ (n - leftSize) ys
                        
   where leftSize = getSize . size . tag $ xs
+
+-- | Test dropJ
+testDropJ :: (Sized b, Monoid b) => Int -> JoinList b a -> Bool
+testDropJ n xs = jlToList (dropJ n xs) == drop n (jlToList xs)
 
