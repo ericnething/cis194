@@ -1,9 +1,13 @@
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
+
 module JoinList where
 
 import Sized
 import Data.Monoid
 
 import Scrabble
+import Buffer
+import StringBuffer
 
 -- | Abstraction of a List
 data JoinList m a = Empty
@@ -106,15 +110,29 @@ scoreLine :: String -> JoinList Score String
 scoreLine str = Single (scoreString str) str
 
 instance Buffer (JoinList (Score, Size) String) where
-  toString   = unwords . jlToList
+  toString   = unlines . jlToList
 
-  fromString = build . map def . words
-    where build [] = []
+  fromString = build . map def . lines
+    where build []  = Empty
           build [x] = x
-          build xs = build (merge xs)
+          build xs  = build (merge xs)
 
           merge (x1:x2:xs) = x1 <> x2 : merge xs
           merge (x:xs)     = x : merge xs
           merge []         = []
           
-          def str = Single (scoreString str, length str) str
+          def str = Single (scoreString str, Size 1) str
+
+  line = indexJ
+  
+  replaceLine _ _    Empty       = Empty
+  replaceLine 0 str (Single m a) = Single (scoreString str, Size 1) str
+  replaceLine _ _   (Single m a) = Single m a
+  replaceLine n str (Append m xs ys)
+    | n < leftSize = replaceLine n str xs <> ys
+    | otherwise    = xs <> replaceLine (n - leftSize) str ys
+    where leftSize = getSize . size . tag $ xs
+
+  numLines = getSize . size . snd . tag
+
+  value = (\(Score a) -> a) . fst . tag
