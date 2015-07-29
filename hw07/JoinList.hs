@@ -3,11 +3,17 @@ module JoinList where
 import Sized
 import Data.Monoid
 
+import Scrabble
+
 -- | Abstraction of a List
 data JoinList m a = Empty
                   | Single m a
                   | Append m (JoinList m a) (JoinList m a)
                   deriving (Eq, Show)
+
+instance Monoid m => Monoid (JoinList m a) where
+  mempty = Empty
+  mappend = (+++)
 
 -- | Test Case
 testJoinList :: JoinList Size Char
@@ -92,3 +98,23 @@ takeJ n (Append _ xs ys)
 -- | Test takeJ
 testTakeJ :: (Sized b, Monoid b, Eq a) => Int -> JoinList b a -> Bool
 testTakeJ n xs = jlToList (takeJ n xs) == take n (jlToList xs)
+
+----------------------------------------------------------------------
+-- Scrabble
+
+scoreLine :: String -> JoinList Score String
+scoreLine str = Single (scoreString str) str
+
+instance Buffer (JoinList (Score, Size) String) where
+  toString   = unwords . jlToList
+
+  fromString = build . map def . words
+    where build [] = []
+          build [x] = x
+          build xs = build (merge xs)
+
+          merge (x1:x2:xs) = x1 <> x2 : merge xs
+          merge (x:xs)     = x : merge xs
+          merge []         = []
+          
+          def str = Single (scoreString str, length str) str
