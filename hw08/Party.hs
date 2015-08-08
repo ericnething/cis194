@@ -4,8 +4,9 @@ module Party where
 
 import Employee
 import Data.Monoid
+import Control.Applicative ((<$>))
 import Data.Tree
-import Data.List (foldl1')
+import Data.List (foldl1', sort)
 
 -- | Add an Employee to the GuestList and update the Fun score without
 -- performing any checks
@@ -40,3 +41,11 @@ nextLevel boss xs = (withBoss xs, withoutBoss xs)
 -- | Calculate the best GuestList given an Employee hierarchy
 maxFun :: Tree Employee -> GuestList
 maxFun = uncurry moreFun . treeFold' nextLevel
+
+
+main :: IO ()
+main = do
+  (GL employees score) <- maxFun . read <$> readFile "company.txt"
+  let guests = sort $ map empName employees
+  putStrLn $ "Total fun: " <> show score
+  mapM_ putStrLn guests
