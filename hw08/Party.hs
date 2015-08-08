@@ -26,14 +26,17 @@ moreFun x@(GL _ t1) y@(GL _ t2)
 treeFold :: Monoid m => (a -> m) -> Tree a -> m
 treeFold f (Node a xs) = f a <> mconcat (fmap (treeFold f) xs)
 
+treeFold' :: (a -> [b] -> b) -> Tree a -> b
+treeFold' f (Node a xs) = f a (map (treeFold' f) xs)
+
 -- | Given a Boss and a list of pairs of GuestList with their boss,
 -- and GuesList without their boss, calculate a pair of the best
 -- GuestList with this Boss, and without this Boss
 nextLevel :: Employee -> [(GuestList, GuestList)] -> (GuestList, GuestList)
-nextLevel boss xs = (foldl1' moreFun withBoss, foldl1' moreFun withoutBoss)
-  where withBoss = map (glCons boss . snd) xs
-        withoutBoss = foldr' (\(a,b) acc -> glCons boss a : glCons boss b : acc) [] xs
+nextLevel boss xs = (withBoss xs, withoutBoss xs)
+  where withBoss = glCons boss . mconcat . snd . unzip
+        withoutBoss = mconcat . map (uncurry moreFun)
 
 -- | Calculate the best GuestList given an Employee hierarchy
--- maxFun :: Tree Employee -> GuestList
--- maxFun = treeFold ((:[]) . nextLevel)
+maxFun :: Tree Employee -> GuestList
+maxFun = uncurry moreFun . treeFold' nextLevel
