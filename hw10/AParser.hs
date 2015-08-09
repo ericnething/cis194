@@ -76,7 +76,7 @@ abParser = (,) <$> char 'a' <*> char 'b'
 
 -- | Parse ('a', 'b'), but produce ()
 abParser_ :: Parser ()
-abParser_ = (\_ -> ()) <$> abParser
+abParser_ = () <$ abParser
 
 -- | Parse two integers separated by a single space
 intPair :: Parser [Integer]
