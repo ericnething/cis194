@@ -1,4 +1,11 @@
-module AParser where
+module AParser
+       (
+         Parser
+       , runParser
+       , satisfy
+       , char
+       , posInt
+       ) where
 
 import Control.Applicative
 import Data.Char
@@ -64,13 +71,13 @@ instance Applicative Parser where
   -- pure :: a -> Parser a
   pure a = Parser $ \s -> Just (a, s)
 
-  -- (<*>) :: Parser (p1 -> p2) -> Parser p1 -> Parser p2
-  -- f :: String -> Maybe (p1 -> p2, String)
-  -- We leave `p` wrapped in its newtype so we can later fmap over it
-  Parser f <*> p = Parser $ \x ->
-    case f x of
-     Nothing        -> Nothing
-     Just (f', str) -> runParser (fmap f' p) str
+  -- (<*>) :: Parser (a -> b) -> Parser a -> Parser b
+  -- runParser p1 :: String -> Maybe (a -> b, String))
+  -- runParser p2 :: String -> Maybe (a, String)
+  p1 <*> p2 = Parser $ \s ->
+    case runParser p1 s of
+     Nothing       -> Nothing
+     Just (g, str) -> runParser (fmap g p2) str
 
 -- | Parse ('a', 'b')
 abParser :: Parser (Char, Char)
